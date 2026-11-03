@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configurations XML_version="1.2" id="configurations_0">
+    <configuration XML_version="1.2" id="configuration_0">
+        <instance XML_version="1.2" desc="Data Snapshot Viewer" href="connections/DataSnapshotViewer.xml" id="Data Snapshot Viewer" xml="DataSnapshotViewer.xml" xmlpath="connections"/>
+        <connection XML_version="1.2" id="Data Snapshot Viewer">
+            <instance XML_version="1.2" href="drivers/DataSnapshotDecoder_c28x.xml" id="drivers" xml="DataSnapshotDecoder_c28x.xml" xmlpath="drivers"/>
+            <platform XML_version="1.2" id="platform_0">
+                <instance XML_version="1.2" desc="TMS320C2812" href="devices/c2812.xml" id="TMS320C2812" xml="c2812.xml" xmlpath="devices"/>
+                <device XML_version="1.2" id="TMS320C2812" partnum="TMS320C2812" HW_revision="1" description="">
+                    <cpu XML_version="1.2" id="C2800" HW_revision="1.0" isa="TMS320C28XX" description="CPU">
+                        <property id="GEL File" Type="filepathfield" Value=""/>
+                    </cpu>
+                </device>
+            </platform>
+        </connection>
+    </configuration>
+</configurations>

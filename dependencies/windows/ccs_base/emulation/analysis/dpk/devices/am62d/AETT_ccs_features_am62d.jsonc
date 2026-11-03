@@ -1,0 +1,20 @@
+{
+  "AM62D": { 
+    "deviceID" : "0x10429E", 
+    "deviceMask" : "0xFFFFFFF",
+    "features" : [ 
+      // C7x Core Analysis
+      {
+        "feature" : "K3DSPCoreTrace",
+        "hostType" : ["win","linux"],
+        "coreType" : "C7x"
+      },
+      // SoC Analysis
+      {
+        "feature" : "CacheAnalysis",
+        "hostType" : ["win","linux"],
+        "coreType" : "C7x"
+      }
+    ]
+  }
+}

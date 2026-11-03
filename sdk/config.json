@@ -1,0 +1,12 @@
+{
+  "runtime": {
+    "windows": "../dependencies/windows",
+    "linux": "../dependencies/linux"
+  },
+  "target": "../dependencies/f28035.ccxml",
+  "images": [],
+  "run_after_flash": true,
+  "timeout": 30,
+  "flash_timeout": 300,
+  "logs": null
+}

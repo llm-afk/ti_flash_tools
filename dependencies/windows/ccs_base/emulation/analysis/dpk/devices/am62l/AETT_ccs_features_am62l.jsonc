@@ -1,0 +1,35 @@
+{
+  "AM62L": { 
+    "deviceID" : "0x0BBA702F", 
+    "deviceMask" : "0xFFFFFFF",
+    "features" : [ 
+      // Cortex-A Core Analysis
+      {
+        "feature" : "K3CortexACoreTrace",
+        "hostType" : ["win","linux"],
+        "coreType" : "Armv8a"
+      },
+      {
+        "feature" : "K3CortexACodeProfile",
+        "hostType" : ["win","linux"],
+        "coreType" : "Armv8a"
+      },
+      // Cortex-M Core Analysis
+      {
+        "feature" : "K3CortexMEventAnalysis",
+        "hostType" : ["win","linux"],
+        "coreType" : "Armv7m"
+      },
+      // SoC Analysis
+      {
+        "feature" : "CPT2TrafficProfiling",
+        "hostType" : ["win","linux"]
+      },
+      {
+        "feature" : "CacheAnalysis",
+        "hostType" : ["win","linux"],
+        "coreType" : "Armv8a"
+      }
+    ]
+  }
+}

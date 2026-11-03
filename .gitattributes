@@ -1,0 +1,17 @@
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.ccxml text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh text eol=lf
+*.bin binary
+*.exe binary
+*.dll binary
+*.so binary
+*.gz binary
+# Preserve the bundled vendor runtime byte-for-byte.
+dependencies/windows/** -text
+dependencies/linux.tar.gz filter=lfs diff=lfs merge=lfs -text
+dependencies/windows/ccs_base/DebugServer/bin/lldbSM.dll filter=lfs diff=lfs merge=lfs -text

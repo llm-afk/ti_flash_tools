@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Device DeviceId="0x00771546" Library="F28E12x_F65_c28x.nfl" Revision="1" CoreType="C28x">
+    <Revisions>
+        <Revision RevisionNumber="1">
+            Initial Revision
+        </Revision>
+    </Revisions>
+    <DefaultPart Name="F28E12x_128KB">
+			<RegisterId Address="0x721CB" Value="0x5" Mask="0x00FF" Comment="Flash size is determined from bits 23:16 in OTP PARTIDL_MSB. A value of 0x5 indicates 128KB of flash"/>
+            <Parameters>  
+            <MemoryMap>
+                <Flash>
+					<ProgramFlash StartAddress="0x00080000" EndAddress="0x0008FFFF" CorrectionStartAddress="0x01080000" CorrectionEndAddress="0x01081FFF"/>
+					<ProgramFlashOtp StartAddress="0x00078000" EndAddress="0x000783FF" CorrectionStartAddress="0x01071000" CorrectionEndAddress="0x0107107F"/>
+					<Bank Number="0" Type="Program" ControlRegister="0x5F800" StartAddress="0x00080000" EndAddress="0x0008FFFF" CorrectionStartAddress="0x01080000" CorrectionEndAddress="0x01081FFF">
+                        <Sector Number="0" Type="Flash" StartAddress="0x80000" Length="0x00010000">
+                            <Correction Type="FlashEcc" StartAddress="0x1080000" Length="0x00000080"/>
+                        </Sector>			
+                        <Otp Type="Otp" StartAddress="0x00078000" Length="0x00000400">
+                            <Correction Type="OtpEcc" StartAddress="0x01071000" Length="0x00000080"/>
+                        </Otp>
+                    </Bank>
+                    </Flash>
+            </MemoryMap>
+            </Parameters>
+    </DefaultPart>	
+    <CommonParameters>
+        <Initialization>      
+            <InitRegisters Register="0x7003" Value="0x0068" Comment="disable watchdog"/>
+			<InitRegisters Register="0x5D214" Value="0x2" Comment="Clear missing clock status"/>
+			<InitRegisters Register="0x7062" Value="0xFFFF" Comment="Clear NMIFLG"/>
+            <InitRegisters Register="0x5FB00" Value="0x00000000" Comment="disable ecc in FW"/>
+            <InitRegisters Register="0x5F800" Value="0x00000300" Comment="RWAIT=3 in NW"/>
+            <InitRegisters Register="0x5F806" Value="0x00000000" Comment="Disable cache and prefetch and this is default on powerup in FMC"/>
+        </Initialization>
+    </CommonParameters>
+</Device>

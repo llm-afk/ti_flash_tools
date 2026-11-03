@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Runtime output
+logs/
+*.log
+*.log.*
+
+# Recreated by dependencies/setup_linux.py from the tracked archive
+/dependencies/linux/
+
+# Desktop metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
