@@ -25,6 +25,11 @@ else:
     sys.path.insert(0, str(PROJECT_ROOT))
     from sdk import EnvironmentError, Image, Result, State, TIFlash
 
+if __package__:
+    from ._environment import prepare_environment, diagnose_error
+else:
+    from _environment import prepare_environment, diagnose_error
+
 
 # Batch settings. C28x addresses below are 16-bit WORD addresses.
 BOOT_FILENAME = "ADM32F036_mc_boot_released_fw_237.bin"
@@ -108,6 +113,8 @@ CONSOLE_TAGS = {
 
 
 def console_event(event):
+    if event.kind == "environment":
+        return  # Dependency checks are silent on success; retained in the log/API.
     if event.kind == "cycle_finished":
         print(flush=True)
         return
@@ -197,8 +204,10 @@ class ProductionFlasher:
             return
         if self.tool is None:
             self.tool = self.factory(progress=self.progress)
+        self.tool._open_log()
+        prepare_environment(self.tool.runtime, self.tool.log)
+        self.tool.check()  # SDK operation stays a software-only tool check.
         plan = self.tool.plan(self.images)
-        self.tool.check()  # Help commands only: no USB enumeration or target access.
         self.manifest = plan["images"]
         self.prepared = True
         self.say("environment", "工具和固件检查通过，目标 XDS110 / F28035。")
@@ -362,7 +371,7 @@ class ProductionFlasher:
 
     def report_error(self, error):
         self.forget_disconnect()
-        key = (type(error).__name__, short_error(error))
+        key = (type(error).__name__, short_error(diagnose_error(error, self.tool)))
         if key != self.last_error:
             self.last_error = key
             self.say("error", "%s；修复后继续等待，Ctrl+C 退出。" % key[1])
@@ -438,20 +447,23 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="XDS110 / F28035 连续烧录；Ctrl+C 退出")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true",
-                      help="只检查软件环境、两个固件和地址；不枚举 USB、不访问 JTAG、不烧录")
+                      help="只做启动准备、软件和系统 USB 驱动/权限检查；成功静默，不打开探针、不访问 JTAG、不烧录")
     mode.add_argument("--once", action="store_true",
                       help="等待一块板并只烧录一次；成功返回 0，失败返回 1，Ctrl+C 返回 130")
     parser.add_argument("--no-session", action="store_true",
                         help="关闭常驻服务，每次烧录使用独立的 TI CLI 进程")
     args = parser.parse_args(argv)
     if args.check:
-        station = ProductionFlasher(on_event=console_event)
+        station = ProductionFlasher()
         try:
             station.prepare()
-            emit("完成", "软件环境、Boot/App 文件和地址检查通过；未访问目标板。")
             return 0
         except Exception as error:
-            emit("失败", short_error(error))
+            if station.tool is not None:
+                station.tool.log.exception("ENVIRONMENT_CHECK_FAILED")
+            emit("失败", short_error(diagnose_error(error, station.tool)))
+            if station.tool is not None and station.tool.log_path.is_file():
+                emit("日志", str(station.tool.log_path))
             return 1
         except KeyboardInterrupt:
             emit("退出", "已停止检查。")

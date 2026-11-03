@@ -7,7 +7,7 @@ ti_flash_tools/
 ├─ dependencies/       TI 程序、USB 驱动、目标配置、Linux 兼容依赖
 ├─ sdk/                Python SDK、内部常驻服务通信、config.json
 ├─ firmware/           待烧录的 Boot / App BIN，保留原文件名
-├─ scripts/            auto_flash.py，Windows / Linux 共用的连续烧录脚本
+├─ scripts/            auto_flash.py 入口和内部启动准备模块，Windows / Linux 共用
 ├─ 启动烧录.bat         Windows 双击启动入口
 └─ README.md
 ```
@@ -17,7 +17,7 @@ ti_flash_tools/
 | 方法 | 作用 |
 |---|---|
 | `TIFlash.from_config()` | 按包内配置建立对象，也可指定自己的配置文件 |
-| `tool.check()` | 检查依赖和工具启动；不访问目标 JTAG/Flash |
+| `tool.check()` | 检查依赖和工具启动；不枚举 USB、不访问目标 JTAG/Flash |
 | `tool.probes()` | 只枚举 USB 烧录器，返回序列号列表 |
 | `tool.detect()` | USB + JTAG IR/DR 探测，返回状态和说明 |
 | `tool.plan(images)` | 校验固件与地址，返回命令和 SHA256；不访问硬件 |
@@ -84,7 +84,7 @@ XDS110 USB 消失、序列号/数量变化，或烧录过程出现异常时，�
 
 Windows：双击根目录的 `启动烧录.bat`。启动器自动查找 Python 3.10 及以上版本，运行现有连续烧录脚本；运行结束后保留窗口。也可继续使用 `python C:\Users\32196\Desktop\ti_flash_tools\scripts\auto_flash.py`。
 
-Linux：进入 `ti_flash_tools` 根目录，运行 `python3 scripts/auto_flash.py`。Linux 首次使用先按下节解压运行库。
+Linux：进入 `ti_flash_tools` 根目录，运行 `python3 scripts/auto_flash.py`。首次使用会自动校验并静默解压包内运行库。
 
 脚本启动后持续运行，按 `Ctrl+C` 退出。固件文件名、起始地址、轮询间隔在脚本顶部集中配置；当前使用 `firmware/` 中的 Boot 237（`0x3F6000`）和 App 245（`0x3E8000`），地址单位为 C28x 16 位 word。
 
@@ -104,7 +104,7 @@ Linux：进入 `ti_flash_tools` 根目录，运行 `python3 scripts/auto_flash.p
 
 软件环境或 USB 异常会保留脚本运行，修复后继续检测；相同异常不重复刷屏。只允许一个自动烧录脚本占用工位。固件在启动时记录 SHA256，运行中改变固件会停止发起烧录，需恢复文件或重启脚本确认新批次。
 
-只检查软件环境、两个固件和地址：给上述命令加 `--check`。该模式不枚举 USB、不访问 JTAG、不烧录，检查完成后退出。
+只做启动准备、依赖检查、已接入 USB 的驱动/权限检查及固件地址检查：给上述命令加 `--check`。该模式只读取操作系统 USB 设备信息，不打开探针、不访问 JTAG、不烧录；成功不输出内容并返回 0，失败打印原因、处理方法和日志位置并返回 1。Linux 首次运行也会自动准备运行库。
 
 ## 接入其他自动化流程
 
@@ -137,13 +137,21 @@ print(result.successes, result.failures, result.reason)
 
 ## 一次性环境准备
 
-通过 Git 克隆项目时需安装 Git LFS，并在仓库目录执行 `git lfs pull` 获取完整大文件。`dependencies/linux.tar.gz` 和 Windows 运行库中的 `lldbSM.dll` 使用 LFS 存储；直接复制完整交付目录仍按下面的步骤运行。
+安装 Python 3.10 及以上版本后，直接使用现有启动入口即可。启动准备只由 `scripts/auto_flash.py` 调用内部的 `_environment.py` 执行，不放进 SDK 的探测、JTAG 或烧录接口。每次启动自动检查依赖，成功静默，正常烧录和换板提示保持显示。
+
+Windows 的四个 VC++ x64 DLL 已按同一版本 14.50.35719.0 随包携带，共约 1 MiB，较原有三个 DLL 净增加约 274 KiB；包含此前缺失的 `concrt140.dll`。来源、版本、微软签名核验和 SHA256 保存在 `dependencies/windows/vc_runtime_manifest.json`，启动时校验这四个小文件。无需为此单独安装整套 Visual Studio。Python 不随包附带，缺失时由启动器明确提示安装 3.10 或更新版本。
+
+TI 子进程继续使用 SDK 原有的包内 DLL/动态库搜索路径，ARM64 使用包内 QEMU。脚本启动准备仅对自带默认 Linux 目录自动解压，不替换调用方指定的运行库，也不覆盖已有非空运行目录。
+
+通过 Git 克隆项目时需安装 Git LFS，并在仓库目录执行 `git lfs pull` 获取完整大文件。`dependencies/linux.tar.gz` 和 Windows 运行库中的 `lldbSM.dll` 使用 LFS 存储；检查发现指针文件时会明确提示该路径和 `git lfs pull` 命令。直接复制完整交付目录不需要 Git LFS。
 
 - Windows：依赖已集中在 `dependencies/windows`。缺 USB 驱动时，管理员 PowerShell 执行：
   `pnputil /add-driver ".\dependencies\windows\ccs_base\emulation\windows\xds110_drivers\*.inf" /install`
-- Linux：首次运行 `python3 dependencies/setup_linux.py`，校验并解压到 `dependencies/linux`，不需要安装 CCS。
+- Windows：启动时检查并校验包内 VC++ x64 运行库；缺失或损坏时打印具体 DLL、恢复依赖目录的处理方法，必要时给出微软运行库安装地址：https://aka.ms/vc14/vc_redist.x64.exe 。
+- Linux：首次自动校验并解压到 `dependencies/linux`；也可以手动执行 `python3 dependencies/setup_linux.py`，加 `--quiet` 可使成功静默。不需要安装 CCS。
 - Linux x86_64 原生执行 Linux TI 工具；A733/ARM64 使用包内 QEMU + AMD64 rootfs，API 不变。
-- 新主机仍需满足 VC++ 运行库或 USB 权限等系统条件，接口不会自动安装系统组件、提权或更新探针固件。
+- 启动阶段读取系统当前已接入的 XDS110 USB 节点：Windows 输出设备管理器问题代码及管理员驱动安装命令；Linux 输出具体 USB 设备节点及 udev 配置命令。未接入探针不判为依赖异常，之后由原有流程等待接入；没有连接探针时，启动检查无法确认它的驱动绑定。需要重新诊断时运行 `--check` 或重启脚本。启动完成后的探测轮询不增加依赖检查。相同启动异常不重复打印，完整原始输出保存在临时日志。
+- 驱动和 VC++ 安装、Linux 系统 USB 权限配置需要管理员处理；脚本检测失败时给出操作方法，本地运行库和子进程环境自动准备，不自动提权或下载外部程序。
 
 依赖保留所需 targetdb、GEL、寄存器表、DLL/so 和原有许可，不能只复制三个 EXE。
 原 A733 包的 DSLite 9.3 退出兼容库只作用于 DSLite，退出状态保留。
